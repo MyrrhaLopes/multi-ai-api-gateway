@@ -123,3 +123,5 @@ dist
 
 # Windows files
 Thumbs.db
+
+.trigger

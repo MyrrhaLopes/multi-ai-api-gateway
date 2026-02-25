@@ -1,13 +1,16 @@
 // import { tasks, runs } from "@trigger.dev/sdk/v3";
 // import { QueueJobResult, QueueJobStatus, TaskQueueProvider } from "../types";
 
+import { runs, tasks } from "@trigger.dev/sdk";
+import { QueueJobResult, QueueJobStatus, JobQueueProvider } from "../../../entities/enqueueing/general-queue-entity.ts";
+
 
 /**
  * @property taskId - The id of the task to trigger. It servers to identify the function to be run on trigger.dev servers.
  * @property payload - The payload to send to the task.
  * @returns the id of the RUN, the live object which keeps record of the task execution and its place on trigger.dev queue.
  */
-export class TriggerQueueProvider implements TaskQueueProvider {
+export class TriggerQueueProvider implements JobQueueProvider {
 
     private static taskStatusMap: Record<string, QueueJobStatus> = {
         "WAITING_FOR_DEPLOY": "pending",

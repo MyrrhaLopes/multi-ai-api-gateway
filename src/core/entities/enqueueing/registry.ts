@@ -1,4 +1,4 @@
-import { TriggerQueueProvider } from "../../providers/queue/Trigger/trigger.ts";
+import { TriggerQueueProvider } from "../../providers/queue/trigger/trigger.ts";
 import type { TaskQueueProvider } from "./general-queue-entity.ts";
 
 export const TaskQueueProviderRegistry = {

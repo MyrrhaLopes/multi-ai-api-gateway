@@ -1,4 +1,4 @@
-import { TriggerQueueProvider } from "../../providers/queue/Trigger/trigger.ts";
+import { TriggerQueueProvider } from "../../providers/queue/trigger/trigger.ts";
 import { TaskQueueProviderRegistry } from "./registry.ts";
 
 export type QueueJobStatus = "pending" | "running" | "success" | "failed" | "cancelled";
@@ -10,7 +10,7 @@ export interface QueueJobResult<T = unknown> {
     errorCode?: number;
 }
 
-export interface TaskQueueProvider {
+export interface JobQueueProvider {
     /**
      * Enqueues a job to be processed.
      * @param jobId The unique identifier for the type of job (e.g., "process-ai-request").
