@@ -1,0 +1,14 @@
+services:
+  calls-log-db:
+    image: postgres:latest
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=postuser
+      - POSTGRES_PASSWORD=postpass
+      - POSTGRES_DB=calls-log
+    volumes:
+      - calls-log-db-data:/var/lib/postgresql/
+
+volumes:
+  calls-log-db-data:
