@@ -1,17 +1,18 @@
-import type { AiWrapperNames } from "../../../../entities/generation/ai-models-registry.ts";
-import { AiModel, KieCreateTaskResponseSchema, KieErrorResponseSchema, KieResultJsonSchema, type CallbackConfig, type KieCreateTaskResponse } from "../../../../entities/generation/general-entities.ts";
+import { AiModel } from "../../../../entities/generation/general-entities.ts";
 import type { AIMessage, AIResponse } from "../../../../entities/generation/messages-entities.ts";
+import { CallbackConfig, KieCreateTaskResponse, KieCreateTaskResponseSchema, KieErrorResponseSchema, KieResultJsonSchema } from "../../../../entities/generation/model-providers-and-wrappers/kie-dtos.ts";
 
 /**
  * Sora2 Image to Video model implementation.
  * Uses KIE wrapper for async video generation from images.
  */
 export class Sora2ImageToVideo extends AiModel {
-    constructor(availableWrapper?: AiWrapperNames) {
+    constructor() {
         super(
             {
                 name: "sora2-image-to-video",
-                aiProvider: "open-ai",
+                modelProvider: "open-ai",
+                apiProvider: "open-ai",
                 costs: {
                     coPer1MInputTokens: 0,
                     coPer1MOutputTokens: 0,
@@ -40,29 +41,9 @@ export class Sora2ImageToVideo extends AiModel {
                         }
                     }
                 },
-                supportedWrappers: ["Kie"]
             },
         );
     }
-
-    //TODO: move function to AiModel parent class
-    /**
-     * KIE wrapper supports callbacks for async task completion.
-     */
-    supportsCallbacks(): boolean {
-        return this.availableWrapper === "Kie";
-    }
-
-    getEndpoint(): string {
-        if (this.selectedWrapper && this.selectedWrapper.name === "Kie") {
-            return "https://api.kie.ai/api/v1/jobs/createTask";
-        }
-        throw new Error(
-            `No endpoint configured for ${this.config.name}. ` +
-            `Default Sora-2 API implementation not available.`
-        );
-    }
-
     /**
      * Builds the KIE-compatible payload for Sora2 image-to-video.
      * 
@@ -75,17 +56,11 @@ export class Sora2ImageToVideo extends AiModel {
      * 
      * @throws Error if no images provided or validation fails
      */
-    getPayload(
+    constructPayload(
         messages: AIMessage[],
         _stream: boolean,
         callbackConfig?: CallbackConfig
     ): Record<string, unknown> {
-        if (this.selectedWrapper && this.selectedWrapper.name !== "Kie") {
-            throw new Error(
-                `Unsupported wrapper configuration for ${this.config.name}. ` +
-                `Expected 'Kie' wrapper, got: ${this.selectedWrapper?.name ?? "none"}`
-            );
-        }
 
         // Use let for variables that will be mutated, const for everything else
         let prompt = ""; // Concatenated in loop, so must be let

@@ -1,7 +1,7 @@
 import z from "zod";
 import { AIMessageSchema } from "../../../core/entities/generation/messages-entities.ts";
 import { ModelRegistry, type availableModels } from "../../../core/entities/generation/ai-models-registry.ts";
-import { AiWrappersRegistry, type availableWrappers } from "../../../core/entities/generation/wrappers/ai-wrappers.ts";
+import { AiWrappersRegistry, type availableWrappers } from "../../../core/entities/generation/model-providers-and-wrappers/kie-dtos.ts";
 
 export const AvailableAiModelsNamesSchema = z.enum(
     Object.keys(ModelRegistry) as [availableModels, ...availableModels[]]

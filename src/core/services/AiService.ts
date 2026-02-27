@@ -3,7 +3,7 @@ import type { TaskQueueProvider } from "../entities/enqueueing/general-queue-ent
 import { ModelRegistry, type availableModels } from "../entities/generation/ai-models-registry.ts";
 import type { AiModel } from "../entities/generation/general-entities.ts";
 import { AIResponseSchema, type AIMessage, type AIResponse } from "../entities/generation/messages-entities.ts";
-import { AiWrapper, AiWrappersRegistry, availableWrappers } from "../entities/generation/wrappers/ai-wrappers.ts";
+import { AiWrapper, AiWrappersRegistry, availableWrappers } from "../entities/generation/model-providers-and-wrappers/kie-dtos.ts";
 
 /**
  * Service to interact with AI models.

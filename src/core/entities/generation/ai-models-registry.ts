@@ -1,7 +1,7 @@
 import z from "zod";
-import { Sora2ImageToVideo } from "../../providers/ai/OpenAI/Sora2ImageToVideo/sora-2-image-to-video.ts";
 import type { AiModel } from "./general-entities.ts";
-import type { availableWrappers } from "./wrappers/ai-wrappers.ts";
+import type { availableWrappers } from "./model-providers-and-wrappers/kie-dtos.ts";
+import { Sora2ImageToVideo } from "../../providers/ai/open-ai/sora-2-image-to-video/sora-2-image-to-video@kie.ts";
 
 
 export const ModelRegistry = {

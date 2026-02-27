@@ -4,7 +4,7 @@ import type { AIMessage, AIResponse } from "./messages-entities.ts";
 import type { availableProvider } from "../enqueueing/registry.ts";
 import type { Costs } from "./costs-entity.ts";
 import type { MediaCapability } from "./media-entities.ts";
-import type { AiWrapper, availableWrappers, CallbackConfig } from "./wrappers/ai-wrappers.ts";
+import type { AiWrapper, availableWrappers, CallbackConfig, KieCreateTaskResponse } from "./model-providers-and-wrappers/kie-dtos.ts";
 import type { availableModelProviders } from "./model-providers/model-providers.ts";
 
 /**
@@ -32,7 +32,8 @@ export interface ModelIOCapabilities {
 
 export interface AiModelConfig {
     name: availableModels;
-    aiProvider: availableModelProviders;
+    modelProvider: availableModelProviders;
+    apiProvider: availableModelProviders | availableWrappers;
     costs: Costs;
     client: AiClient;
     capabilities: {
@@ -41,7 +42,6 @@ export interface AiModelConfig {
         inputCapability: ModelIOCapabilities;
         outputCapability: ModelIOCapabilities;
     };
-    supportedWrappers?: availableWrappers[];
 }
 
 
@@ -68,7 +68,7 @@ export abstract class AiModel {
     ): Record<string, unknown>;
 
     /**
-     * Parses the provider-specific response into a unified format.
+     * Parses the provider-specific response into the unified AIResponse format.
      * For async models, this may return task creation info instead of final content.
      */
     abstract parseResponse(response: unknown): AIResponse | KieCreateTaskResponse;
