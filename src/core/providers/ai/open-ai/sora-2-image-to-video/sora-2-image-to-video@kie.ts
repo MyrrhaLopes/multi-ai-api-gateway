@@ -8,8 +8,8 @@ export const ExpectedSora2PayloadSchema = z.object({
     callbackUrl: z.string().optional(),
     progressCallbackUrl: z.string().optional(),
     input: z.object({
-        prompt: z.string().max(10000),
-        image_urls: z.array(z.string().url()).length(1),
+        prompt: z.string().max(10000, { message: "Prompt must be less than 10000 characters" }),
+        image_urls: z.array(z.url()).length(1, { message: "Exactly one image must be provided", }),
         aspect_ratio: z.enum(["portrait", "landscape"]),
         n_frames: z.enum(["5", "10"]),
         remove_watermark: z.boolean()
@@ -22,7 +22,7 @@ export type ExpectedSora2Payload = z.infer<typeof ExpectedSora2PayloadSchema>;
  * Sora2 Image to Video model implementation.
  * Uses KIE wrapper for async video generation from images.
  */
-export class Sora2ImageToVideoKie extends AiModel {
+export class Sora2ImageToVideoKie extends AiModel<ExpectedSora2Payload> {
     constructor() {
         super(
             {
@@ -76,7 +76,7 @@ export class Sora2ImageToVideoKie extends AiModel {
         messages: AIMessage[],
         _stream: boolean,
         callbackConfig?: CallbackConfig
-    ): ExpectedSora2Payload {
+    ) {
 
         // Use let for variables that will be mutated, const for everything else
         let prompt = ""; // Concatenated in loop, so must be let
@@ -88,12 +88,7 @@ export class Sora2ImageToVideoKie extends AiModel {
             if (message.role !== "user") continue;
 
             if (typeof message.content === "string") {
-                // Sora2 requires an image - text-only content is not supported
-                throw new Error(
-                    `${this.config.name} requires at least one image. ` +
-                    `Received text-only content: "${message.content.slice(0, 50)}...". ` +
-                    `Please provide message.content as an array with both text and media parts.`
-                );
+                prompt += message.content;
             } else if (Array.isArray(message.content)) {
                 for (const part of message.content) {
                     if (part.type === "text") {
@@ -138,21 +133,6 @@ export class Sora2ImageToVideoKie extends AiModel {
         }
 
         // Validate image requirements
-        if (imageUrls.length === 0) {
-            throw new Error(
-                `${this.config.name} requires at least one image URL. ` +
-                `No images were found in the provided messages. ` +
-                `Please include at least one media content part with type="media" and source="url".`
-            );
-        }
-
-        if (imageUrls.length > 1) {
-            throw new Error(
-                `${this.config.name} supports only 1 image, but received ${imageUrls.length} images. ` +
-                `Please provide exactly one image URL.`
-            );
-        }
-
         // Build payload with required KIE fields
         const payload: ExpectedSora2Payload = {
             model: "sora-2-image-to-video",
@@ -166,6 +146,8 @@ export class Sora2ImageToVideoKie extends AiModel {
                 remove_watermark: true
             }
         };
+
+        ExpectedSora2PayloadSchema.parse(payload);
 
         return payload;
     }

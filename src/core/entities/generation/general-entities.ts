@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z, ZodType } from "zod";
 import type { availableModels } from "./ai-models-registry.ts";
 import type { AIMessage, AIResponse } from "./messages-entities.ts";
 import type { availableProvider } from "../enqueueing/registry.ts";
@@ -49,7 +49,7 @@ export interface AiModelClient {
     generate(messages: AIMessage[]): Promise<AIResponse>;
 }
 
-export abstract class AiModel {
+export abstract class AiModel<TPayload = unknown> {
 
     constructor(
         public config: AiModelConfig,
@@ -65,7 +65,7 @@ export abstract class AiModel {
         messages: AIMessage[],
         stream: boolean,
         callbackConfig?: CallbackConfig
-    ): Record<string, unknown>;
+    ): TPayload;
 
     /**
      * Parses the provider-specific response into the unified AIResponse format.

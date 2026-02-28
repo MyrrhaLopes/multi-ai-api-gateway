@@ -18,12 +18,6 @@ test("sora-2-image-to-video@kie constructPayload correctly structures output", (
                     source: "url",
                     mimeType: "image/png",
                     content: "https://example.com/image.png"
-                },
-                {
-                    type: "media",
-                    source: "url",
-                    mimeType: "image/png",
-                    content: "https://example.com/image.png"
                 }
             ]
         }
@@ -36,6 +30,4 @@ test("sora-2-image-to-video@kie constructPayload correctly structures output", (
 
     // We can confidently use the validated, strongly-typed object for exact value assertions
     console.log(payload);
-
-    expect
 });
