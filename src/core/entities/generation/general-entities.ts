@@ -12,11 +12,11 @@ import type { availableModelProviders } from "./model-providers/model-providers.
  * Replaces the narrow `string | GoogleGenAI` type.
  */
 export type AiClient =
-    | { type: "http"; baseUrl: string; authHeader?: string }
-    // | { type: "google"; instance: GoogleGenAI }
+    | { type: "http"; endpoint: string; authHeader?: string, apiKey?: string }
+    // | { type: "client"; instance: GoogleGenAI }
     // Add more SDK types as needed:
-    // | { type: "openai"; instance: OpenAI }
-    // | { type: "anthropic"; instance: Anthropic }
+    // | { type: "client"; instance: OpenAI }
+    // | { type: "client"; instance: Anthropic }
     ;
 
 /**

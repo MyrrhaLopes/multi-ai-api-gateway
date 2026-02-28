@@ -1,10 +1,10 @@
-import { type availableProvider, TaskQueueProviderRegistry } from "../entities/enqueueing/registry.ts";
+import { type availableProvider, JobQueueProviderRegistry } from "../entities/enqueueing/registry.ts";
 import type { JobQueueProvider, QueueJobResult } from "../entities/enqueueing/general-queue-entity.ts";
 
 export default class QueueService {
     private provider: JobQueueProvider;
     constructor(provider: availableProvider = "trigger") {
-        const providerClass = TaskQueueProviderRegistry[provider];
+        const providerClass = JobQueueProviderRegistry[provider];
         if (!providerClass) {
             throw new Error(`Provider ${provider} not found`);
         }

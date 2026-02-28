@@ -1,9 +1,8 @@
 import type { AiTaskLiveData } from "../entities/enqueueing/ai-tasks-entities.ts";
-import type { TaskQueueProvider } from "../entities/enqueueing/general-queue-entity.ts";
 import { ModelRegistry, type availableModels } from "../entities/generation/ai-models-registry.ts";
-import type { AiModel } from "../entities/generation/general-entities.ts";
+import type { AiClient, AiModel } from "../entities/generation/general-entities.ts";
 import { AIResponseSchema, type AIMessage, type AIResponse } from "../entities/generation/messages-entities.ts";
-import { AiWrapper, AiWrappersRegistry, availableWrappers } from "../entities/generation/model-providers-and-wrappers/kie-dtos.ts";
+import { AiWrapper, AiWrappersRegistry, availableWrappers, CallbackConfig, type KieCreateTaskResponse } from "../entities/generation/model-providers-and-wrappers/kie-dtos.ts";
 
 /**
  * Service to interact with AI models.
@@ -18,14 +17,12 @@ import { AiWrapper, AiWrappersRegistry, availableWrappers } from "../entities/ge
  */
 export class AiService {
     public readonly model: AiModel;
-    public readonly wrapper?: AiWrapper;
     /**
-     * Creates an AiService instance for the specified model.
-     * @param modelName - The name of the AI model to use
-     */
+ * Creates an AiService instance for the specified model.
+ * @param modelName - The name of the AI model to use
+ */
     constructor(
         public readonly modelName: availableModels,
-        public readonly wrapperName?: availableWrappers,
     ) {
         const ModelClass = ModelRegistry[modelName];
         if (!ModelClass) {
@@ -36,17 +33,6 @@ export class AiService {
             );
         }
         this.model = new ModelClass();
-        if (wrapperName && this.model.config.supportedWrappers?.includes(wrapperName)) {
-            const wrapper = AiWrappersRegistry[wrapperName];
-            if (!wrapper) {
-                const available = Object.keys(AiWrappersRegistry).join(", ");
-                throw new Error(
-                    `Unknown AI wrapper: "${wrapperName}". ` +
-                    `Available wrappers: [${available}]`
-                );
-            }
-            this.wrapper = wrapper;
-        }
     }
     /**
  * Calls the AI model and returns the response.
@@ -54,53 +40,35 @@ export class AiService {
  * @param messages - The conversation history or prompts
  * @param callbackConfig - Optional callback configuration for async models
  */
-    async call(messages: AIMessage[],): Promise<AIResponse | undefined> {
+    async generate(messages: AIMessage[], callbackConfig?: CallbackConfig): Promise<AIResponse | KieCreateTaskResponse | undefined> {
         try {
             // Handle HTTP-based clients (wrappers or direct HTTP APIs)
             if (this.model.config.client.type === "http") {
-                const payload = this.model.constructPayload(messages, false);
+                const payload = this.model.constructPayload(messages, false, callbackConfig);
 
-                const response = await fetch(this.getEndpoint(), {
+                const response = await fetch(this.model.config.client.endpoint, {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json",
-                        ...(authHeader && { "Authorization": authHeader })
+                        ...({ "Authorization": this.model.config.client.authHeader })
                     },
                     body: JSON.stringify(payload),
                 });
 
                 if (!response.ok) {
                     const errorBody = await response.text();
-                    const via = this.selectedWrapper ? ` via ${this.selectedWrapper.name}` : "";
                     throw new Error(
-                        `${this.config.name}${via} failed: ` +
+                        `${this.model.config.name} generation failed: ` +
                         `${response.status} ${response.statusText} - ${errorBody}`
                     );
                 }
 
                 const data = await response.json();
-                return this.parseResponse(data);
+                return this.model.parseResponse(data);
             }
-
-            // Handle SDK-based clients
-            if (client.type === "google") {
-                // TODO: Implement Google GenAI client execution
-                throw new Error("Google GenAI client execution not yet implemented");
-            }
-
-            throw new Error(`No execution path for client type: ${(client as AiClient).type}`);
         } catch (e: unknown) {
             const message = e instanceof Error ? e.message : String(e);
-            throw new Error(`Failed to call ${this.config.name}: ${message}`);
+            throw new Error(`Failed to call ${this.model.config.name}: ${message}`);
         }
-    }
-
-    /**
-     * Generates content using the AI model.
-     * @param messages - The conversation history or prompts
-     * @returns The AI response
-     */
-    async generate(messages: AIMessage[]): Promise<AIResponse> {
-        return this.model.generate(messages);
     }
 }

@@ -1,16 +1,32 @@
+import z from "zod";
 import { AiModel } from "../../../../entities/generation/general-entities.ts";
 import type { AIMessage, AIResponse } from "../../../../entities/generation/messages-entities.ts";
 import { CallbackConfig, KieCreateTaskResponse, KieCreateTaskResponseSchema, KieErrorResponseSchema, KieResultJsonSchema } from "../../../../entities/generation/model-providers-and-wrappers/kie-dtos.ts";
+
+export const ExpectedSora2PayloadSchema = z.object({
+    model: z.literal("sora-2-image-to-video"),
+    callbackUrl: z.string().optional(),
+    progressCallbackUrl: z.string().optional(),
+    input: z.object({
+        prompt: z.string().max(10000),
+        image_urls: z.array(z.string().url()).length(1),
+        aspect_ratio: z.enum(["portrait", "landscape"]),
+        n_frames: z.enum(["5", "10"]),
+        remove_watermark: z.boolean()
+    })
+});
+
+export type ExpectedSora2Payload = z.infer<typeof ExpectedSora2PayloadSchema>;
 
 /**
  * Sora2 Image to Video model implementation.
  * Uses KIE wrapper for async video generation from images.
  */
-export class Sora2ImageToVideo extends AiModel {
+export class Sora2ImageToVideoKie extends AiModel {
     constructor() {
         super(
             {
-                name: "sora2-image-to-video",
+                name: "sora2-image-to-video@kie",
                 modelProvider: "open-ai",
                 apiProvider: "open-ai",
                 costs: {
@@ -18,7 +34,7 @@ export class Sora2ImageToVideo extends AiModel {
                     coPer1MOutputTokens: 0,
                     creditCostPerGeneration: 0
                 },
-                client: { type: "http", baseUrl: "https://api.kie.ai/api/v1" },
+                client: { type: "http", endpoint: "https://api.kie.ai/api/v1/jobs/createTask", authHeader: `Bearer ${process.env.KIE_API_KEY}` },
                 capabilities: {
                     contextWindow: 0,
                     maxOutputTokens: 0,
@@ -60,14 +76,13 @@ export class Sora2ImageToVideo extends AiModel {
         messages: AIMessage[],
         _stream: boolean,
         callbackConfig?: CallbackConfig
-    ): Record<string, unknown> {
+    ): ExpectedSora2Payload {
 
         // Use let for variables that will be mutated, const for everything else
         let prompt = ""; // Concatenated in loop, so must be let
         const imageUrls: string[] = [];
         const aspectRatio: "portrait" | "landscape" = "portrait"; // Never reassigned, so const
         const nFrames: "5" | "10" = "10"; // Never reassigned, so const
-
         // Extract prompt and images from messages
         for (const message of messages) {
             if (message.role !== "user") continue;
@@ -139,8 +154,10 @@ export class Sora2ImageToVideo extends AiModel {
         }
 
         // Build payload with required KIE fields
-        const payload: Record<string, unknown> = {
+        const payload: ExpectedSora2Payload = {
             model: "sora-2-image-to-video",
+            callbackUrl: callbackConfig?.callbackUrl,
+            progressCallbackUrl: callbackConfig?.progressCallbackUrl,
             input: {
                 prompt,
                 image_urls: imageUrls,
@@ -149,14 +166,6 @@ export class Sora2ImageToVideo extends AiModel {
                 remove_watermark: true
             }
         };
-
-        // Add callback URLs for async execution
-        if (callbackConfig) {
-            payload.callBackUrl = callbackConfig.callbackUrl;
-            if (callbackConfig.progressCallbackUrl) {
-                payload.progressCallBackUrl = callbackConfig.progressCallbackUrl;
-            }
-        }
 
         return payload;
     }

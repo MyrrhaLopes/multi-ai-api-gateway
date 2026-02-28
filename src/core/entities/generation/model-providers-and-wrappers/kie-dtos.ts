@@ -18,7 +18,7 @@ export const AiWrappersRegistry = {
         },
         client: {
             type: "http",
-            baseUrl: "https://api.kie.com",
+            endpoint: "https://api.kie.com",
             authHeader: "Bearer " + process.env.KIE_API_KEY
         }
     }
@@ -46,6 +46,7 @@ export const KieCreateTaskResponseSchema = z.object({
         taskId: z.string()
     })
 });
+
 export type KieCreateTaskResponse = z.infer<typeof KieCreateTaskResponseSchema>;
 
 export const KieTaskStateSchema = z.enum(["waiting", "queuing", "generating", "success", "fail"]);

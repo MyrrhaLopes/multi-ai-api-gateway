@@ -4,8 +4,8 @@ import { errorHandler } from "./globals/errors/error-handler.ts";
 import fastifyCors from "@fastify/cors";
 import fastifySwagger from "@fastify/swagger";
 import fastifySwaggerUi from "@fastify/swagger-ui";
-import { createGenerationTestRoute } from "./routes/create-generation-task/create-generation-test.ts";
 import { env } from "../core/env.ts";
+import { createGenerationTestRoute } from "./routes/generate-ai-content/generate-ai-content.ts";
 
 const app = fastify().withTypeProvider<ZodTypeProvider>();
 

@@ -1,7 +1,7 @@
-import { TriggerQueueProvider } from "../../providers/queue/trigger/trigger.ts";
-import { TaskQueueProviderRegistry } from "./registry.ts";
+import z from "zod";
 
-export type QueueJobStatus = "pending" | "running" | "success" | "failed" | "cancelled";
+export const QueueJobStatusSchema = z.enum(["pending", "running", "success", "failed", "cancelled"]);
+export type QueueJobStatus = z.infer<typeof QueueJobStatusSchema>;
 
 export interface QueueJobResult<T = unknown> {
     status: QueueJobStatus;

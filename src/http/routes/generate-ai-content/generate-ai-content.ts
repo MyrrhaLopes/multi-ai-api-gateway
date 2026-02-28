@@ -1,6 +1,6 @@
 import type { FastifyPluginAsyncZod } from "fastify-type-provider-zod";
 import QueueService from "../../../core/services/QueueService.ts";
-import { GenerateContentRequestSchema, GenerateContentResponseSchema } from "./schemas.ts";
+import { GenerateContentRequestSchema, GenerateContentResponseSchema202 } from "./schemas.ts";
 import z from "zod";
 import { ClientError } from "../../globals/errors/client-error.ts";
 
@@ -11,7 +11,7 @@ export const createGenerationTestRoute: FastifyPluginAsyncZod = async app => {
         schema: {
             body: GenerateContentRequestSchema,
             response: {
-                201: GenerateContentResponseSchema
+                202: GenerateContentResponseSchema202,
             }
         }
     }, async (request, reply) => {
@@ -22,12 +22,12 @@ export const createGenerationTestRoute: FastifyPluginAsyncZod = async app => {
         if (!taskId) {
             throw new ClientError("Failed to enqueue task", {})
         }
-        type ResponseType = z.infer<typeof GenerateContentResponseSchema>;
+        type ResponseType = z.infer<typeof GenerateContentResponseSchema202>;
         const response: ResponseType = {
             taskId: taskId,
             modelName: body.modelName,
-            status: "queued"
+            status: "pending"
         }
-        return reply.code(201).send(response)
+        return reply.code(202).send(response)
     })
 }
