@@ -1,6 +1,6 @@
 import { schemaTask, wait } from "@trigger.dev/sdk";
 import { GenerateContentRequestSchema } from "../../../../../http/routes/generate-ai-content/schemas.ts";
-import { AiService } from "../../../../services/AiService.ts";
+import { AiService } from "../../../../services/ai-service.ts";
 
 export const generateAiContentJob = schemaTask({
     id: "generate-ai-content",

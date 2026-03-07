@@ -1,0 +1,40 @@
+
+[1m[46m RUN [49m[22m [36mv4.0.18 [39m[90mC:/Projects/multi-ai-gateway[39m
+
+ [31m❯[39m src/tests/services/ai-service.test.ts [2m([22m[2m1 test[22m[2m | [22m[31m1 failed[39m[2m)[22m[32m 89[2mms[22m[39m
+[31m   [31m×[31m should receive an AIMessage and return an AIResponse (Mocked)[39m[32m 85[2mms[22m[39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[39m[1m[41m Failed Tests 1 [49m[22m[31m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[41m[1m FAIL [22m[49m src/tests/services/ai-service.test.ts[2m > [22mshould receive an AIMessage and return an AIResponse (Mocked)
+[31m[1mError[22m: Failed to call sora2-image-to-video@kie: [
+  {
+    "origin": "array",
+    "code": "too_small",
+    "minimum": 1,
+    "inclusive": true,
+    "exact": true,
+    "path": [
+      "input",
+      "image_urls"
+    ],
+    "message": "Exactly one image must be provided"
+  }
+][39m
+[36m [2m❯[22m AiService.generate src/core/services/AiService.ts:[2m71:19[22m[39m
+    [90m 69| [39m        } [35mcatch[39m (e[33m:[39m unknown) {
+    [90m 70| [39m            [35mconst[39m message [33m=[39m e [35minstanceof[39m [33mError[39m [33m?[39m e[33m.[39mmessage [33m:[39m [33mString[39m(e)[33m;[39m
+    [90m 71| [39m            throw new Error(`Failed to call ${this.model.config.name}:…
+    [90m   | [39m                  [31m^[39m
+    [90m 72| [39m        }
+    [90m 73| [39m    }
+[90m [2m❯[22m src/tests/services/ai-service.test.ts:[2m56:38[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯[22m[39m
+
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m   Start at [22m 16:54:40
+[2m   Duration [22m 1.47s[2m (transform 287ms, setup 0ms, import 626ms, tests 89ms, environment 0ms)[22m
+

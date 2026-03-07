@@ -161,6 +161,7 @@ export class Sora2ImageToVideoKie extends AiModel<ExpectedSora2Payload> {
      */
     parseResponse(response: unknown): KieCreateTaskResponse {
         // Try to parse as success response first (code: 200 with data)
+        //TODO: entender a diferença entre parse e safeParse
         const successParsed = KieCreateTaskResponseSchema.safeParse(response);
         if (successParsed.success) {
             return successParsed.data;
