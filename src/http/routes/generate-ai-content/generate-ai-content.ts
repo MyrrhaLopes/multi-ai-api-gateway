@@ -10,6 +10,11 @@ import { AuthService } from "../../../core/services/auth-service.ts";
 
 //QUESTION: What is the purpouse of this type? I understand that plugins are a way of compositing and isolating routes and hooks,
 // but I don't understand the purpouse of this type.
+//
+// ANSWER: FastifyPluginAsyncZod ensures that the `app` instance passed into this function
+// is correctly typed with Zod schema validation capabilities. It tells TypeScript that this
+// plugin will accept Zod schemas for validation and type inference (like inferring `request.body`
+// from your `GenerateContentRequestSchema`) without you needing to cast it manually.
 export const createGenerationTestRoute: FastifyPluginAsyncZod = async (app) => {
   app.post(
     "/create-generation-task",
@@ -24,6 +29,19 @@ export const createGenerationTestRoute: FastifyPluginAsyncZod = async (app) => {
 
     async (request, reply) => {
       const body = request.body;
+
+      // 1. Verify if the API key has permission for this specific model
+      const permitedModels = request.auth?.permitedModels || [];
+      if (
+        !permitedModels.includes(body.modelName) &&
+        !permitedModels.includes("*")
+      ) {
+        throw new ClientError(
+          `Model '${body.modelName}' is not permitted for this API Key.`,
+        );
+      }
+
+      // 2. Proceed with business logic
       const queueService = new QueueService();
       const taskId = await queueService.enqueue("generate-ai-content", body);
       if (!taskId) {
