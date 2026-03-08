@@ -14,12 +14,14 @@ declare module "fastify" {
 }
 
 const authHeaderSchema = z.object({
-  "API Key": z
+  "api key": z
     .string({ error: "API Key is required" })
     .min(32, { error: "Invalid API KEY" }),
 });
 
-export const authPreHandler: FastifyPluginAsyncZod = async (app) => {
+import fp from "fastify-plugin";
+
+export const authPreHandler = fp(async (app: FastifyPluginAsyncZod) => {
   app.addHook(
     "preHandler",
     async (request: FastifyRequest, reply: FastifyReply) => {
@@ -30,7 +32,7 @@ export const authPreHandler: FastifyPluginAsyncZod = async (app) => {
           .code(401)
           .send({ error: "Unauthenticated", details: result.error });
       }
-      const apiKey = result.data["API Key"];
+      const apiKey = result.data["api key"];
 
       //autentica se o usuário está presente no sistema
       const { permitedModels, permitedRoutes } =
@@ -59,4 +61,4 @@ export const authPreHandler: FastifyPluginAsyncZod = async (app) => {
       };
     },
   );
-};
+});
