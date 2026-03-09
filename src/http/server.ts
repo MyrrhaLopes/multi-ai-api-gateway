@@ -1,44 +1,51 @@
 import fastify from "fastify";
-import { jsonSchemaTransform, serializerCompiler, validatorCompiler, type ZodTypeProvider } from "fastify-type-provider-zod";
+import {
+  jsonSchemaTransform,
+  serializerCompiler,
+  validatorCompiler,
+  type ZodTypeProvider,
+} from "fastify-type-provider-zod";
 import { errorHandler } from "./globals/errors/error-handler.ts";
 import fastifyCors from "@fastify/cors";
 import fastifySwagger from "@fastify/swagger";
 import fastifySwaggerUi from "@fastify/swagger-ui";
 import { env } from "../core/env.ts";
-import { createGenerationTestRoute } from "./routes/generate-ai-content/generate-ai-content.ts";
+import { AiContentGenerationRoute } from "./routes/generate-ai-content/generate-ai-content.ts";
 
-const app = fastify().withTypeProvider<ZodTypeProvider>();
+const app = fastify({
+  logger: {
+    transport: { target: "pino-pretty", options: { colorize: true } },
+  },
+}).withTypeProvider<ZodTypeProvider>();
 
 app.setValidatorCompiler(validatorCompiler);
 app.setSerializerCompiler(serializerCompiler);
 
-app.setErrorHandler(errorHandler)
+app.setErrorHandler(errorHandler);
 
 app.register(fastifyCors, {
-    origin: "*",
-    methods: ["GET", "POST", "PUT", "DELETE"]
-})
+  origin: "*",
+  methods: ["GET", "POST", "PUT", "DELETE"],
+});
 
 app.register(fastifySwagger, {
-    openapi: {
-        info: {
-            title: "Multi AI Gateway API",
-            description: "Multi AI Gateway API",
-            version: "1.0.0"
-        }
+  openapi: {
+    info: {
+      title: "Multi AI Gateway API",
+      description: "Multi AI Gateway API",
+      version: "1.0.0",
     },
-    transform: jsonSchemaTransform
-})
+  },
+  transform: jsonSchemaTransform,
+});
 
 app.register(fastifySwaggerUi, {
-    routePrefix: "/docs"
-})
+  routePrefix: "/docs",
+});
 
-app.register(createGenerationTestRoute)
+app.register(AiContentGenerationRoute);
 
-app.listen({ port: env.PORT, host: '0.0.0.0' }).then(
-    () => {
-        console.log(`Server is running on port ${env.PORT}`)
-        console.log(`Swagger UI is available at http://localhost:${env.PORT}/docs`)
-    }
-)
+app.listen({ port: env.PORT, host: "0.0.0.0" }).then(() => {
+  console.log(`Server is running on port ${env.PORT}`);
+  console.log(`Swagger UI is available at http://localhost:${env.PORT}/docs`);
+});

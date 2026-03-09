@@ -4,7 +4,7 @@ import {
   serializerCompiler,
   validatorCompiler,
 } from "fastify-type-provider-zod";
-import { createGenerationTestRoute } from "../../http/routes/generate-ai-content/generate-ai-content.ts";
+import { AiContentGenerationRoute } from "../../http/routes/generate-ai-content/generate-ai-content.ts";
 import { authPreHandler } from "../../http/hooks/pre-handlers/auth-pre-handler.ts";
 import { errorHandler } from "../../http/globals/errors/error-handler.ts";
 
@@ -42,7 +42,7 @@ describe("POST /create-generation-task", () => {
 
     // Register our auth hook and the route
     await app.register(authPreHandler);
-    await app.register(createGenerationTestRoute);
+    await app.register(AiContentGenerationRoute);
   });
 
   it("should return 401 if API Key is missing", async () => {

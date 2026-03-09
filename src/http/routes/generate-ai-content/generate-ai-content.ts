@@ -3,21 +3,45 @@ import QueueService from "../../../core/services/queue-service.ts";
 import {
   GenerateContentRequestSchema,
   GenerateContentResponseSchema202,
+  GetGenerationResponseSchema,
+  isAIResponse,
 } from "./schemas.ts";
 import { union, object, z } from "zod";
 import { ClientError } from "../../globals/errors/client-error.ts";
 import { AuthService } from "../../../core/services/auth-service.ts";
+import { authPreHandler } from "../../hooks/pre-handlers/auth-pre-handler.ts";
 
-//QUESTION: What is the purpouse of this type? I understand that plugins are a way of compositing and isolating routes and hooks,
-// but I don't understand the purpouse of this type.
-//
-// ANSWER: FastifyPluginAsyncZod ensures that the `app` instance passed into this function
-// is correctly typed with Zod schema validation capabilities. It tells TypeScript that this
-// plugin will accept Zod schemas for validation and type inference (like inferring `request.body`
-// from your `GenerateContentRequestSchema`) without you needing to cast it manually.
-export const createGenerationTestRoute: FastifyPluginAsyncZod = async (app) => {
+export const AiContentGenerationRoute: FastifyPluginAsyncZod = async (app) => {
+  app.register(authPreHandler);
+  app.get(
+    "/generate-ai-content",
+    {
+      schema: {
+        querystring: z.object({ q: z.string().min(1) }, "Expected taskId"),
+        response: {
+          200: GetGenerationResponseSchema,
+          400: z.object({ error: z.string() }),
+        },
+      },
+    },
+    async (request, reply) => {
+      const permitedModels = request.auth?.permitedModels || [];
+
+      const { q } = request.query;
+
+      console.log("aa");
+      if (!q) {
+        console.error("must have query!");
+        return reply.code(400).send({ error: "must have query!" });
+      }
+      const queueService = new QueueService();
+
+      const jobResult = await queueService.getStatus(q, isAIResponse);
+      return reply.code(200).send(jobResult);
+    },
+  );
   app.post(
-    "/create-generation-task",
+    "/generate-ai-content",
     {
       schema: {
         body: GenerateContentRequestSchema,
