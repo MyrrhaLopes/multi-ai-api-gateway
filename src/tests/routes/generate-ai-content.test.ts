@@ -26,8 +26,9 @@ vi.mock("../../core/services/queue-service.ts", () => {
 
 // Import the mocked service so we can change its behavior per-test
 import { AuthService } from "../../core/services/auth-service.ts";
+import { brotliDecompressSync } from "zlib";
 
-describe("POST /create-generation-task", () => {
+describe("POST /generate-ai-content", () => {
   let app: ReturnType<typeof Fastify>;
 
   beforeEach(async () => {
@@ -48,11 +49,17 @@ describe("POST /create-generation-task", () => {
   it("should return 401 if API Key is missing", async () => {
     const response = await app.inject({
       method: "POST",
-      url: "/create-generation-task",
+      url: "/generate-ai-content",
       payload: {
         modelName: "sora2-image-to-video@kie",
         messages: [{ role: "user", content: "test" }],
       },
+    });
+
+    logResponse({
+      statusCode: response.statusCode,
+      body: JSON.stringify(response.json(), null, 2),
+      headers: "",
     });
 
     expect(response.statusCode).toBe(401);
@@ -67,8 +74,8 @@ describe("POST /create-generation-task", () => {
 
     const response = await app.inject({
       method: "POST",
-      url: "/create-generation-task",
-      headers: { "API Key": "valid_key_that_is_32_chars_long_1234" },
+      url: "/generate-ai-content",
+      headers: { "api-key": "valid_key_that_is_32_chars_long_1234" },
       payload: {
         modelName: "sora2-image-to-video@kie",
         messages: [{ role: "user", content: "test" }],
@@ -83,13 +90,13 @@ describe("POST /create-generation-task", () => {
     // Mock the DB returning a user that only has access to a specific model
     vi.mocked(AuthService.authenticate).mockResolvedValue({
       permitedModels: ["gpt-4o"], // Does not have access to sora2!
-      permitedRoutes: ["/create-generation-task"],
+      permitedRoutes: ["/generate-ai-content"],
     } as any);
 
     const response = await app.inject({
       method: "POST",
-      url: "/create-generation-task",
-      headers: { "API Key": "valid_key_that_is_32_chars_long_1234" },
+      url: "/generate-ai-content",
+      headers: { "api-key": "valid_key_that_is_32_chars_long_1234" },
       payload: {
         modelName: "sora2-image-to-video@kie",
         messages: [{ role: "user", content: "test" }],
@@ -107,17 +114,29 @@ describe("POST /create-generation-task", () => {
       permitedRoutes: ["*"],
     } as any);
 
-    const response = await app.inject({
+    const payload = {
+      modelName: "sora2-image-to-video@kie",
+      messages: [{ role: "user", content: "test prompt" }],
+    };
+
+    logRequest({
+      payload: JSON.stringify(payload, null, 2),
       method: "POST",
-      url: "/create-generation-task",
-      headers: { "API Key": "valid_key_that_is_32_chars_long_1234" },
-      payload: {
-        modelName: "sora2-image-to-video@kie",
-        messages: [{ role: "user", content: "test prompt" }],
-      },
+      url: "/generate-ai-content",
     });
 
-    console.log(response);
+    const response = await app.inject({
+      method: "POST",
+      url: "/generate-ai-content",
+      headers: { "api-key": "valid_key_that_is_32_chars_long_1234" },
+      payload,
+    });
+
+    logResponse({
+      statusCode: response.statusCode,
+      body: JSON.stringify(response.json(), null, 2),
+      headers: "",
+    });
     expect(response.statusCode).toBe(202);
     expect(response.json()).toEqual({
       taskId: "fake_task_123", // Assert our mocked queue service was called
@@ -126,3 +145,25 @@ describe("POST /create-generation-task", () => {
     });
   });
 });
+
+function logResponse(response: {
+  statusCode: number;
+  body: string;
+  headers: string;
+}) {
+  console.log("\n--- RESPONSE ---");
+  console.log("Status Code:", response.statusCode);
+  console.log("Body:", response.body);
+  console.log("----------------\n");
+}
+
+function logRequest(request: {
+  payload: string;
+  url: string;
+  method: "POST" | "GET" | "DELETE";
+}) {
+  console.log("\n--- REQUEST ---");
+  console.log("Method: ", request.method);
+  console.log("URL: ", request.url);
+  console.log(request.payload);
+}

@@ -39,7 +39,7 @@ export const authPreHandler = fp(async (app: FastifyInstance) => {
         await AuthService.authenticate(apiKey);
 
       // Verify route access
-      // `request.routeOptions.url` gives the defined route path (e.g., "/create-generation-task")
+      // `request.routeOptions.url` gives the defined route path (e.g., "/generate-ai-content")
       const currentRoute = request.routeOptions.url;
 
       // Allow access if the route is explicitly listed or if there is a wildcard "*"

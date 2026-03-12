@@ -28,12 +28,6 @@ export const AiContentGenerationRoute: FastifyPluginAsyncZod = async (app) => {
       const permitedModels = request.auth?.permitedModels || [];
 
       const { q } = request.query;
-
-      console.log("aa");
-      if (!q) {
-        console.error("must have query!");
-        return reply.code(400).send({ error: "must have query!" });
-      }
       const queueService = new QueueService();
 
       const jobResult = await queueService.getStatus(q, isAIResponse);
