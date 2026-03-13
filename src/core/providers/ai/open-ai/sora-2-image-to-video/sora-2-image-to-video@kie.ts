@@ -1,6 +1,8 @@
 import z from "zod";
 import { AiModel } from "../../../../entities/generation/general-entities.ts";
-import type { AIMessage, AIResponse } from "../../../../entities/generation/messages-entities.ts";
+import type { ContentType } from "../../../../entities/generation/content-input.ts";
+import { inferContentType } from "../../../../entities/generation/content-validation.ts";
+import type { AIResponse } from "../../../../entities/generation/messages-entities.ts";
 import { CallbackConfig, KieCreateTaskResponse, KieCreateTaskResponseSchema, KieErrorResponseSchema, KieResultJsonSchema } from "../../../../entities/generation/model-providers-and-wrappers/kie-dtos.ts";
 
 export const ExpectedSora2PayloadSchema = z.object({
@@ -23,6 +25,9 @@ export type ExpectedSora2Payload = z.infer<typeof ExpectedSora2PayloadSchema>;
  * Uses KIE wrapper for async video generation from images.
  */
 export class Sora2ImageToVideoKie extends AiModel<ExpectedSora2Payload> {
+
+    readonly supportedInputTypes: ContentType[] = ["text", "image_url"];
+
     constructor() {
         super(
             {
@@ -42,7 +47,7 @@ export class Sora2ImageToVideoKie extends AiModel<ExpectedSora2Payload> {
                         supportsText: true,
                         supportsMedia: true,
                         media: {
-                            supportedMimeTypes: ["image/png", "image/jpeg"], //TODO: add text to supported mime types
+                            supportedMimeTypes: ["image/png", "image/jpeg"],
                             maxSizeInMb: 10,
                             source: "url"
                         }
@@ -63,77 +68,17 @@ export class Sora2ImageToVideoKie extends AiModel<ExpectedSora2Payload> {
     /**
      * Builds the KIE-compatible payload for Sora2 image-to-video.
      * 
-     * **Requirements:**
-     * - At least one image URL is required
-     * - Maximum 1 image supported by KIE Sora2
-     * - Images must be URL-based (no base64)
-     * - Supported formats: PNG, JPG, JPEG, WEBP
-     * - Max file size: 10MB per image
-     * 
-     * @throws Error if no images provided or validation fails
+     * Receives a flat array of content strings (text prompts and image URLs).
+     * Content types have already been validated at the route handler level.
      */
     constructPayload(
-        messages: AIMessage[],
+        content: string[],
         _stream: boolean,
         callbackConfig?: CallbackConfig
     ) {
+        const prompt = content.filter(c => inferContentType(c) === "text").join(" ");
+        const imageUrls = content.filter(c => inferContentType(c) === "image_url");
 
-        // Use let for variables that will be mutated, const for everything else
-        let prompt = ""; // Concatenated in loop, so must be let
-        const imageUrls: string[] = [];
-        const aspectRatio: "portrait" | "landscape" = "portrait"; // Never reassigned, so const
-        const nFrames: "5" | "10" = "10"; // Never reassigned, so const
-        // Extract prompt and images from messages
-        for (const message of messages) {
-            if (message.role !== "user") continue;
-
-            if (typeof message.content === "string") {
-                prompt += message.content;
-            } else if (Array.isArray(message.content)) {
-                for (const part of message.content) {
-                    if (part.type === "text") {
-                        prompt += part.text;
-                    } else if (part.type === "media") {
-                        // Validate media type
-                        if (part.source !== "url") {
-                            throw new Error(
-                                `${this.config.name} only supports URL-based images. ` +
-                                `Received source: "${part.source}". ` +
-                                `Please upload images to a public URL first.`
-                            );
-                        }
-
-                        // Validate MIME type (KIE docs show support for common image formats)
-                        const supportedTypes = ["image/png", "image/jpeg", "image/jpg", "image/webp"];
-                        if (!supportedTypes.includes(part.mimeType)) {
-                            throw new Error(
-                                `${this.config.name} does not support MIME type "${part.mimeType}". ` +
-                                `Supported types: ${supportedTypes.join(", ")}`
-                            );
-                        }
-
-                        // Validate file size if provided in metadata
-                        if (part.meta?.sizeInBytes) {
-                            const maxSizeBytes = 10 * 1024 * 1024; // 10MB
-                            if (part.meta.sizeInBytes > maxSizeBytes) {
-                                throw new Error(
-                                    `Image "${part.meta.fileName ?? "unnamed"}" exceeds ` +
-                                    `${this.config.name} size limit of 10MB. ` +
-                                    `Received: ${(part.meta.sizeInBytes / 1024 / 1024).toFixed(2)}MB`
-                                );
-                            }
-                        }
-
-                        if (typeof part.content === "string") {
-                            imageUrls.push(part.content);
-                        }
-                    }
-                }
-            }
-        }
-
-        // Validate image requirements
-        // Build payload with required KIE fields
         const payload: ExpectedSora2Payload = {
             model: "sora-2-image-to-video",
             callbackUrl: callbackConfig?.callbackUrl,
@@ -141,8 +86,8 @@ export class Sora2ImageToVideoKie extends AiModel<ExpectedSora2Payload> {
             input: {
                 prompt,
                 image_urls: imageUrls,
-                aspect_ratio: aspectRatio,
-                n_frames: nFrames,
+                aspect_ratio: "portrait",
+                n_frames: "10",
                 remove_watermark: true
             }
         };

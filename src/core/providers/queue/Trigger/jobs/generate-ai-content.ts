@@ -16,11 +16,11 @@ export const generateAiContentJob = schemaTask({
             const token = await wait.createToken({
                 timeout: "10m",
             });
-            const result = await aiService.generate(payload.messages, { callbackUrl: token.url });
+            const result = await aiService.generate(payload.content, { callbackUrl: token.url });
             return result;
         }
 
-        const result = await aiService.generate(payload.messages);
+        const result = await aiService.generate(payload.content);
         return result;
     },
 });

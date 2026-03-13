@@ -1,6 +1,5 @@
 import z from "zod";
 import {
-  AIMessageSchema,
   AIResponse,
   AIResponseSchema,
 } from "../../../core/entities/generation/messages-entities.ts";
@@ -28,7 +27,7 @@ export const AvailableAiWrappersNamesSchema = z.enum(
 // POST SCHEMAS
 export const GenerateContentRequestSchema = z.object({
   modelName: AvailableAiModelsNamesSchema,
-  messages: z.array(AIMessageSchema),
+  content: z.array(z.string().min(1)).min(1),
 });
 
 export const GenerateContentResponseSchema202 = z.object({

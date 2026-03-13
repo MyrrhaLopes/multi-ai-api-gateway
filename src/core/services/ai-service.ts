@@ -1,7 +1,7 @@
 import type { AiTaskLiveData } from "../entities/enqueueing/ai-tasks-entities.ts";
 import { ModelRegistry, type availableModels } from "../entities/generation/ai-models-registry.ts";
 import type { AiClient, AiModel } from "../entities/generation/general-entities.ts";
-import { AIResponseSchema, type AIMessage, type AIResponse } from "../entities/generation/messages-entities.ts";
+import { AIResponseSchema, type AIResponse } from "../entities/generation/messages-entities.ts";
 import { AiWrapper, AiWrappersRegistry, availableWrappers, CallbackConfig, type KieCreateTaskResponse } from "../entities/generation/model-providers-and-wrappers/kie-dtos.ts";
 
 /**
@@ -10,9 +10,8 @@ import { AiWrapper, AiWrappersRegistry, availableWrappers, CallbackConfig, type 
  * 
  * @example
  * ```ts
- * const ai = new AiService("sora2-image-to-video", "Kie", queueProvider);
- * const taskId = await ai.createTask(messages);
- * const status = await AiService.getTaskStatus(queueProvider, taskId);
+ * const ai = new AiService("sora2-image-to-video@kie");
+ * const result = await ai.generate(["a prompt", "https://example.com/image.png"]);
  * ```
  */
 export class AiService {
@@ -37,14 +36,14 @@ export class AiService {
     /**
  * Calls the AI model and returns the response.
  * For async models with callbacks, this initiates the task and returns the task ID.
- * @param messages - The conversation history or prompts
+ * @param content - Array of raw content strings (text prompts or URLs)
  * @param callbackConfig - Optional callback configuration for async models
  */
-    async generate(messages: AIMessage[], callbackConfig?: CallbackConfig): Promise<AIResponse | KieCreateTaskResponse | undefined> {
+    async generate(content: string[], callbackConfig?: CallbackConfig): Promise<AIResponse | KieCreateTaskResponse | undefined> {
         try {
             // Handle HTTP-based clients (wrappers or direct HTTP APIs)
             if (this.model.config.client.type === "http") {
-                const payload = this.model.constructPayload(messages, false, callbackConfig);
+                const payload = this.model.constructPayload(content, false, callbackConfig);
 
                 const response = await fetch(this.model.config.client.endpoint, {
                     method: "POST",

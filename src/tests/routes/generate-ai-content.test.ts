@@ -26,22 +26,18 @@ vi.mock("../../core/services/queue-service.ts", () => {
 
 // Import the mocked service so we can change its behavior per-test
 import { AuthService } from "../../core/services/auth-service.ts";
-import { brotliDecompressSync } from "zlib";
 
 describe("POST /generate-ai-content", () => {
   let app: ReturnType<typeof Fastify>;
 
   beforeEach(async () => {
-    // Reset mocks before each test
     vi.clearAllMocks();
 
-    // Setup a clean Fastify instance for testing
     app = Fastify();
     app.setValidatorCompiler(validatorCompiler);
     app.setSerializerCompiler(serializerCompiler);
     app.setErrorHandler(errorHandler);
 
-    // Register our auth hook and the route
     await app.register(authPreHandler);
     await app.register(AiContentGenerationRoute);
   });
@@ -52,21 +48,14 @@ describe("POST /generate-ai-content", () => {
       url: "/generate-ai-content",
       payload: {
         modelName: "sora2-image-to-video@kie",
-        messages: [{ role: "user", content: "test" }],
+        content: ["test prompt"],
       },
-    });
-
-    logResponse({
-      statusCode: response.statusCode,
-      body: JSON.stringify(response.json(), null, 2),
-      headers: "",
     });
 
     expect(response.statusCode).toBe(401);
   });
 
   it("should return 403 if API Key does not have access to the route", async () => {
-    // Mock the DB returning a user that only has access to a DIFFERENT route
     vi.mocked(AuthService.authenticate).mockResolvedValue({
       permitedModels: ["*"],
       permitedRoutes: ["/some-other-route"],
@@ -78,7 +67,7 @@ describe("POST /generate-ai-content", () => {
       headers: { "api-key": "valid_key_that_is_32_chars_long_1234" },
       payload: {
         modelName: "sora2-image-to-video@kie",
-        messages: [{ role: "user", content: "test" }],
+        content: ["test prompt"],
       },
     });
 
@@ -87,9 +76,8 @@ describe("POST /generate-ai-content", () => {
   });
 
   it("should return 400 ClientError if the API Key is not permitted to use the requested model", async () => {
-    // Mock the DB returning a user that only has access to a specific model
     vi.mocked(AuthService.authenticate).mockResolvedValue({
-      permitedModels: ["gpt-4o"], // Does not have access to sora2!
+      permitedModels: ["gpt-4o"],
       permitedRoutes: ["/generate-ai-content"],
     } as any);
 
@@ -99,16 +87,15 @@ describe("POST /generate-ai-content", () => {
       headers: { "api-key": "valid_key_that_is_32_chars_long_1234" },
       payload: {
         modelName: "sora2-image-to-video@kie",
-        messages: [{ role: "user", content: "test" }],
+        content: ["test prompt"],
       },
     });
 
-    expect(response.statusCode).toBe(400); // Because we throw a ClientError
+    expect(response.statusCode).toBe(400);
     expect(response.json().message).toContain("not permitted for this API Key");
   });
 
   it("should return 202 and enqueue the task if all permissions are valid", async () => {
-    // Mock successful auth with full wildcard access
     vi.mocked(AuthService.authenticate).mockResolvedValue({
       permitedModels: ["*"],
       permitedRoutes: ["*"],
@@ -116,14 +103,8 @@ describe("POST /generate-ai-content", () => {
 
     const payload = {
       modelName: "sora2-image-to-video@kie",
-      messages: [{ role: "user", content: "test prompt" }],
+      content: ["test prompt", "https://example.com/image.png"],
     };
-
-    logRequest({
-      payload: JSON.stringify(payload, null, 2),
-      method: "POST",
-      url: "/generate-ai-content",
-    });
 
     const response = await app.inject({
       method: "POST",
@@ -132,38 +113,31 @@ describe("POST /generate-ai-content", () => {
       payload,
     });
 
-    logResponse({
-      statusCode: response.statusCode,
-      body: JSON.stringify(response.json(), null, 2),
-      headers: "",
-    });
     expect(response.statusCode).toBe(202);
     expect(response.json()).toEqual({
-      taskId: "fake_task_123", // Assert our mocked queue service was called
+      taskId: "fake_task_123",
       modelName: "sora2-image-to-video@kie",
       status: "pending",
     });
   });
+
+  it("should return 400 if content type is not supported by the model", async () => {
+    vi.mocked(AuthService.authenticate).mockResolvedValue({
+      permitedModels: ["*"],
+      permitedRoutes: ["*"],
+    } as any);
+
+    const response = await app.inject({
+      method: "POST",
+      url: "/generate-ai-content",
+      headers: { "api-key": "valid_key_that_is_32_chars_long_1234" },
+      payload: {
+        modelName: "sora2-image-to-video@kie",
+        content: ["a prompt", "https://example.com/video.mp4"],
+      },
+    });
+
+    expect(response.statusCode).toBe(400);
+    expect(response.json().message).toContain("Content not supported");
+  });
 });
-
-function logResponse(response: {
-  statusCode: number;
-  body: string;
-  headers: string;
-}) {
-  console.log("\n--- RESPONSE ---");
-  console.log("Status Code:", response.statusCode);
-  console.log("Body:", response.body);
-  console.log("----------------\n");
-}
-
-function logRequest(request: {
-  payload: string;
-  url: string;
-  method: "POST" | "GET" | "DELETE";
-}) {
-  console.log("\n--- REQUEST ---");
-  console.log("Method: ", request.method);
-  console.log("URL: ", request.url);
-  console.log(request.payload);
-}

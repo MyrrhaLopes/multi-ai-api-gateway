@@ -1,11 +1,12 @@
 import { z, ZodType } from "zod";
 import type { availableModels } from "./ai-models-registry.ts";
-import type { AIMessage, AIResponse } from "./messages-entities.ts";
+import type { AIResponse } from "./messages-entities.ts";
 import type { availableProvider } from "../enqueueing/registry.ts";
 import type { Costs } from "./costs-entity.ts";
 import type { MediaCapability } from "./media-entities.ts";
 import type { AiWrapper, availableWrappers, CallbackConfig, KieCreateTaskResponse } from "./model-providers-and-wrappers/kie-dtos.ts";
 import type { availableModelProviders } from "./model-providers/model-providers.ts";
+import type { ContentType } from "./content-input.ts";
 
 /**
  * Unified client abstraction supporting both HTTP-based and SDK-based providers.
@@ -45,9 +46,6 @@ export interface AiModelConfig {
 }
 
 
-export interface AiModelClient {
-    generate(messages: AIMessage[]): Promise<AIResponse>;
-}
 
 export abstract class AiModel<TPayload = unknown> {
 
@@ -55,14 +53,18 @@ export abstract class AiModel<TPayload = unknown> {
         public config: AiModelConfig,
     ) {
     }
+
+    /** Content types this model accepts (validated at the route handler level) */
+    abstract readonly supportedInputTypes: ContentType[];
+
     /**
      * Builds the API payload for the model.
-     * @param messages - The conversation history or prompts
+     * @param content - Array of raw content strings (text prompts or URLs)
      * @param stream - Whether to request streaming response
      * @param callbackConfig - Optional callback URLs for async execution
      */
     abstract constructPayload(
-        messages: AIMessage[],
+        content: string[],
         stream: boolean,
         callbackConfig?: CallbackConfig
     ): TPayload;

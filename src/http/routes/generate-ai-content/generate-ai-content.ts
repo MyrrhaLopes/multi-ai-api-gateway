@@ -10,6 +10,8 @@ import { union, object, z } from "zod";
 import { ClientError } from "../../globals/errors/client-error.ts";
 import { AuthService } from "../../../core/services/auth-service.ts";
 import { authPreHandler } from "../../hooks/pre-handlers/auth-pre-handler.ts";
+import { ModelRegistry } from "../../../core/entities/generation/ai-models-registry.ts";
+import { validateContentAgainstModel } from "../../../core/entities/generation/content-validation.ts";
 
 export const AiContentGenerationRoute: FastifyPluginAsyncZod = async (app) => {
   app.register(authPreHandler);
@@ -59,7 +61,17 @@ export const AiContentGenerationRoute: FastifyPluginAsyncZod = async (app) => {
         );
       }
 
-      // 2. Proceed with business logic
+      // 2. Validate content types against model capabilities
+      const ModelClass = ModelRegistry[body.modelName];
+      const modelInstance = new ModelClass();
+      const validation = validateContentAgainstModel(body.content, modelInstance.supportedInputTypes);
+      if (!validation.valid) {
+        throw new ClientError(
+          `Content not supported by model "${body.modelName}": ${validation.errors.join(", ")}`,
+        );
+      }
+
+      // 3. Proceed with business logic
       const queueService = new QueueService();
       const taskId = await queueService.enqueue("generate-ai-content", body);
       if (!taskId) {
